@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">          
+    <title>麻老六滷味 - 訂單系統</title>
+    <!-- 引入 html2canvas 用來將網頁轉成圖片 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #d35400;
+            --bg-color: #fdf6e3;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            padding: 20px;
+            background-color: var(--bg-color);
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 { text-align: center; color: var(--primary-color); margin-bottom: 10px; }
+        
+        fieldset {
+            border: 2px solid #eee;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+
+        legend { font-weight: bold; color: var(--primary-color); padding: 0 10px; }
+
+        /* 新增：單位提示框樣式 */
+        .notice-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--primary-color);
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            border-radius: 4px;
+        }
+
+        .info-field { margin-bottom: 15px; }
+        .info-field label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .info-field input, .info-field select {
+            width: 100%; padding: 10px; box-sizing: border-box;
+            border: 1px solid #ddd; border-radius: 5px; font-size: 16px;
+        }
+
+        .item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #f0f0f0;
+        }
+        .item label { 
+            flex: 1; padding-right: 10px; font-size: 15px; 
+            display: flex; align-items: center;
+        }
+        
+        /* 修改：品項連結樣式 (移除藍色與底線，改為滑鼠懸停變色) */
+        .item-link {
+            color: #333; /* 預設黑色 */
+            cursor: pointer;
+            text-decoration: none; /* 移除底線 */
+            transition: color 0.2s;
+            user-select: none; /* 防止連點時選取文字 */
+        }
+        .item-link:hover {
+            color: var(--primary-color); /* 滑鼠移過去變成品牌橘色 */
+        }
+        .item-link:active {
+            transform: scale(0.98); /* 點擊時微縮效果 */
+        }
+
+        .item input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+
+        /* 按鈕群組 */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+        }
+
+        .btn {
+            display: block; width: 100%; padding: 15px;
+            border: none; border-radius: 8px; font-size: 18px; font-weight: bold;
+            cursor: pointer; transition: background 0.3s; text-align: center;
+        }
+
+        .btn-calc { background-color: var(--primary-color); color: white; margin-top: 20px; }
+        .btn-calc:hover { background-color: #ba4a00; }
+
+        .btn-copy { background-color: #28a745; color: white; }
+        .btn-copy:hover { background-color: #218838; }
+
+        .btn-img { background-color: #007bff; color: white; }
+        .btn-img:hover { background-color: #0069d9; }
+
+        /* 結果區域 */
+        #results {
+            background-color: #fff8f0;
+            border: 1px solid #ffe0b2;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed #ccc;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            display: none;
+        }
+        .receipt-header h2 { margin: 0; color: #d35400; }
+
+        .total-price {
+            font-size: 28px; color: #e74c3c; font-weight: bold;
+            text-align: right; display: block; margin-top: 10px;
+            border-top: 2px dashed #ccc; padding-top: 10px;
+        }
+
+        #imgPreviewArea {
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+            background: #eee;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        #imgPreviewArea img {
+            max-width: 100%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+        }
+
+        /* 圖片彈窗 (Modal) 樣式 */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.8); 
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            margin: 10% auto;
+            display: block;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 10px;
+            border: 4px solid #fff;
+            animation: zoomIn 0.3s;
+        }
+        .modal-caption {
+            margin: auto;
+            display: block;
+            width: 80%;
+            text-align: center;
+            color: #fff;
+            padding: 10px 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        @keyframes zoomIn {
+            from {transform:scale(0)} 
+            to {transform:scale(1)}
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>麻老六滷味訂單</h1>
+    
+    <fieldset>
+        <legend>1. 填寫訂購資訊</legend>
+        <div class="info-field">
+            <label for="orderer">訂購人姓名：</label>
+            <input type="text" id="orderer" placeholder="請輸入姓名">
+        </div>
+        <div class="info-field">
+            <label for="phone">聯絡電話：</label>
+            <input type="tel" id="phone" placeholder="09xx-xxx-xxx">
+        </div>
+        <div class="info-field">
+            <label for="leader">取貨方式：</label>
+            <select id="leader" onchange="updatePickupField()">
+                <option value="自取" data-fee="0">自取 (免運)</option>
+                <option value="店到店" data-fee="100">店到店 (+$100)</option>
+                <option value="宅配" data-fee="250">宅配 (+$250)</option>
+            </select>
+        </div>
+        <div class="info-field" id="pickupExtraField" style="display: block;">
+            <label id="pickupExtraLabel">自取位置：</label>
+            <input type="text" id="pickupExtraInput">
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <!-- 修改了 Legend 提示文字 -->
+        <legend>2. 選擇餐點 (點擊品名可看圖)</legend>
+        
+        <!-- 新增：單位提示區塊 -->
+        <div class="notice-box">
+            💡 提醒您：所有商品皆以「份」為單位計算
+        </div>
+
+        <div class="menu-list" id="menu">
+            
+            <!-- 請將 showImage 中的 'URL' 替換成真實圖片網址 -->
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=鴨頭', '鴨頭', event)">鴨頭 ($100)</span></label>
+                <input type="number" data-price="100" data-name="鴨頭" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=鴨翅', '鴨翅', event)">鴨翅 ($175)</span></label>
+                <input type="number" data-price="175" data-name="鴨翅" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=鴨舌', '鴨舌', event)">鴨舌 ($130)</span></label>
+                <input type="number" data-price="130" data-name="鴨舌" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=雞腳', '雞腳', event)">雞腳 ($70)</span></label>
+                <input type="number" data-price="70" data-name="雞腳" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=雞架', '雞架', event)">雞架 ($80)</span></label>
+                <input type="number" data-price="80" data-name="雞架" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=鴨脖', '鴨脖', event)">鴨脖 ($80)</span></label>
+                <input type="number" data-price="80" data-name="鴨脖" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=雞心', '雞心', event)">雞心 ($80)</span></label>
+                <input type="number" data-price="80" data-name="雞心" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=雞胗', '雞胗', event)">雞胗 ($80)</span></label>
+                <input type="number" data-price="80" data-name="雞胗" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=鴨腱頭', '鴨腱頭', event)">鴨腱頭 ($80)</span></label>
+                <input type="number" data-price="80" data-name="鴨腱頭" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=烏蛋', '烏蛋', event)">烏蛋 ($80)</span></label>
+                <input type="number" data-price="80" data-name="烏蛋" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=蓮藕', '蓮藕', event)">蓮藕 ($100)</span></label>
+                <input type="number" data-price="100" data-name="蓮藕" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=豆干', '豆干', event)">豆干 ($50)</span></label>
+                <input type="number" data-price="50" data-name="豆干" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=百頁豆腐', '百頁豆腐', event)">百頁豆腐 ($50)</span></label>
+                <input type="number" data-price="50" data-name="百頁豆腐" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=海帶', '海帶', event)">海帶 ($50)</span></label>
+                <input type="number" data-price="50" data-name="海帶" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=米血', '米血', event)">米血 ($60)</span></label>
+                <input type="number" data-price="60" data-name="米血" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=甜不辣', '甜不辣', event)">甜不辣 ($60)</span></label>
+                <input type="number" data-price="60" data-name="甜不辣" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=香菇', '香菇', event)">香菇 ($70)</span></label>
+                <input type="number" data-price="70" data-name="香菇" value="0" min="0">
+            </div>
+            <div class="item">
+                <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=芋粿', '芋粿', event)">芋粿 ($70)</span></label>
+                <input type="number" data-price="70" data-name="芋粿" value="0" min="0">
+            </div>
+            
+            <div style="background: #fff0e0; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <strong style="color:#d35400;">超值組合</strong>
+                <div class="item">
+                    <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=A組合', 'A組合', event)">A組合 (海帶+百頁+香菇) ($80)</span></label>
+                    <input type="number" data-price="80" data-name="A組合" value="0" min="0">
+                </div>
+                <div class="item">
+                    <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=B組合', 'B組合', event)">B組合 (芋粿+米血+甜不辣) ($80)</span></label>
+                    <input type="number" data-price="80" data-name="B組合" value="0" min="0">
+                </div>
+                <div class="item">
+                    <label><span class="item-link" onclick="showImage('https://placehold.co/400x300/d35400/white?text=牛肉組合', '牛肉組合', event)">牛肉組合 (牛肚+牛腱) ($250)</span></label>
+                    <input type="number" data-price="250" data-name="牛肉組合" value="0" min="0">
+                </div>
+            </div>
+        </div>
+    </fieldset>
+
+    <button class="btn btn-calc" onclick="calculateTotal()">步驟1：計算金額</button>
+
+    <!-- 結果顯示區 (也是截圖的目標) -->
+    <div id="results">
+        <div class="receipt-header" id="receiptHeader">
+            <h2>麻老六滷味訂購單</h2>
+        </div>
+
+        <div id="outputDetails" style="line-height: 1.6; font-family: monospace; font-size: 16px;"></div>
+        
+        <textarea id="copyTextArea" style="opacity: 0; height: 0; width: 0;"></textarea>
+        
+        <div class="btn-group" id="actionButtons" style="margin-top: 20px;">
+            <button class="btn btn-copy" onclick="copyOrderText()">📄 複製文字 (Line貼上)</button>
+            <button class="btn btn-img" onclick="saveAsImage()">📸 下載訂單圖片</button>
+        </div>
+    </div>
+
+    <div id="imgPreviewArea">
+        <p style="color: red; font-weight: bold;">👇 您的訂單圖片 👇<br>(若未自動下載，請長按圖片儲存)</p>
+        <div id="generatedImage"></div>
+    </div>
+
+</div>
+
+<!-- 圖片彈窗結構 (Modal) -->
+<div id="imageModal" class="modal" onclick="closeModal()">
+    <span class="close-modal" onclick="closeModal()">&times;</span>
+    <img class="modal-content" id="modalImg">
+    <div class="modal-caption" id="modalTitle"></div>
+</div>
+
+<script>
+    // 顯示圖片彈窗
+    function showImage(url, title, event) {
+        // 阻止事件冒泡，避免點擊文字時觸發其他行為
+        if(event) event.stopPropagation();
+        
+        var modal = document.getElementById("imageModal");
+        var modalImg = document.getElementById("modalImg");
+        var captionText = document.getElementById("modalTitle");
+        
+        modal.style.display = "block";
+        modalImg.src = url;
+        captionText.innerHTML = title;
+    }
+
+    // 關閉圖片彈窗
+    function closeModal() {
+        document.getElementById("imageModal").style.display = "none";
+    }
+
+    function updatePickupField() {
+        const leaderSelect = document.getElementById("leader");
+        const selectedOption = leaderSelect.options[leaderSelect.selectedIndex];
+        const extraField = document.getElementById("pickupExtraField");
+        const extraLabel = document.getElementById("pickupExtraLabel");
+
+        if (selectedOption.value === "自取") {
+            extraLabel.textContent = "自取位置：";
+            extraField.style.display = "block";
+        } else if (selectedOption.value === "店到店") {
+            extraLabel.textContent = "店家資訊 (店名/代號)：";
+            extraField.style.display = "block";
+        } else if (selectedOption.value === "宅配") {
+            extraLabel.textContent = "宅配完整地址：";
+            extraField.style.display = "block";
+        } else {
+            extraField.style.display = "none";
+        }
+    }
+    updatePickupField();
+
+    function calculateTotal() {
+        const orderer = document.getElementById("orderer").value;
+        const phone = document.getElementById("phone").value;
+        const leaderSelect = document.getElementById("leader");
+        const selectedOption = leaderSelect.options[leaderSelect.selectedIndex];
+        const leader = selectedOption.value;
+        const shippingFee = parseInt(selectedOption.getAttribute("data-fee")) || 0;
+        const pickupExtra = document.getElementById("pickupExtraInput").value;
+
+        if(orderer === ""){
+            alert("請填寫訂購人姓名喔！");
+            return;
+        }
+
+        const items = document.querySelectorAll('#menu .item input');
+        let total = 0;
+        let detailsText = ''; 
+        let detailsHtml = ''; 
+        const now = new Date();
+        const timeString = now.toLocaleString('zh-TW', { hour12: false });
+
+        items.forEach(item => {
+            const quantity = parseInt(item.value) || 0;
+            const price = parseInt(item.getAttribute('data-price')) || 0;
+            const itemName = item.getAttribute('data-name');
+
+            if (quantity > 0) {
+                let subtotal = quantity * price;
+                total += subtotal;
+                detailsHtml += `<div style="display:flex; justify-content:space-between;"><span>${itemName} x ${quantity}</span><span>${subtotal}</span></div>`;
+                detailsText += `${itemName} x ${quantity} = ${subtotal}\n`;
+            }
+        });
+
+        if (total === 0) {
+            alert("您還沒有選擇任何餐點喔！");
+            return;
+        }
+
+        total += shippingFee;
+
+        // 顯示結果區域
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('imgPreviewArea').style.display = 'none';
+
+        // 1. 產生網頁顯示的 HTML
+        const finalHtml = `
+            <div style="border-bottom:1px solid #ddd; padding-bottom:10px; margin-bottom:10px;">
+                <div><strong>訂購人：</strong>${orderer}</div>
+                <div><strong>電話：</strong>${phone}</div>
+                <div><strong>取貨：</strong>${leader}</div>
+                <div><strong>備註：</strong>${pickupExtra}</div>
+                <div><strong>時間：</strong>${timeString}</div>
+            </div>
+            <div style="font-weight:bold; margin-bottom:5px;">餐點明細：</div>
+            ${detailsHtml}
+            <div style="text-align:right; margin-top:10px; color:#666;">運費：${shippingFee} 元</div>
+            <span class="total-price">總金額：${total} 元</span>
+        `;
+        document.getElementById('outputDetails').innerHTML = finalHtml;
+
+        // 2. 準備純文字給複製用
+        const copyText = `【麻老六訂單】\n姓名：${orderer}\n電話：${phone}\n取貨：${leader} (${pickupExtra})\n------------------\n${detailsText}運費：${shippingFee}\n------------------\n總金額：${total}`;
+        document.getElementById('copyTextArea').value = copyText;
+        
+        document.getElementById('results').scrollIntoView({behavior: "smooth"});
+    }
+
+    function copyOrderText() {
+        const copyText = document.getElementById("copyTextArea");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value).then(() => {
+            alert("文字已複製！");
+        }).catch(() => {
+            alert("複製失敗，請手動選取。");
+        });
+    }
+
+    function saveAsImage() {
+        const element = document.getElementById("results");
+        const btns = document.getElementById("actionButtons");
+        const header = document.getElementById("receiptHeader");
+        
+        btns.style.display = "none";
+        header.style.display = "block";
+
+        html2canvas(element, { backgroundColor: "#ffffff", scale: 2 }).then(canvas => {
+            btns.style.display = "flex";
+            header.style.display = "none";
+
+            const link = document.createElement('a');
+            link.download = '麻老六訂單_' + new Date().getTime() + '.png';
+            link.href = canvas.toDataURL();
+            link.click();
+
+            const imgUrl = canvas.toDataURL("image/png");
+            const imgArea = document.getElementById("generatedImage");
+            imgArea.innerHTML = "";
+            const newImg = document.createElement("img");
+            newImg.src = imgUrl;
+            imgArea.appendChild(newImg);
+            
+            document.getElementById("imgPreviewArea").style.display = "block";
+            document.getElementById("imgPreviewArea").scrollIntoView({behavior: "smooth"});
+
+        }).catch(err => {
+            alert("圖片生成失敗，請稍後再試");
+            btns.style.display = "flex";
+            header.style.display = "none";
+        });
+    }
+</script>
+
+</body>
+</html>
