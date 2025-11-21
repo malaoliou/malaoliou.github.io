@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">          
     <title>麻老六滷味 - 訂單系統</title>
+    
+    <!-- Favicon logo 設定 -->
+    <link rel="icon" href="picture/logo.png" type="image/png">
+    
     <!-- 引入 html2canvas 用來將網頁轉成圖片 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -31,6 +35,16 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
+        /* ★★★ 新增：Banner 圖片樣式 ★★★ */
+        .banner-img {
+            width: 100%;              /* 讓圖片填滿容器 */
+            height: auto;             /* 高度自動維持比例 */
+            border-radius: 10px;      /* 圖片圓角 */
+            margin-bottom: 15px;      /* 與下方標題的距離 */
+            display: block;           /* 避免下方產生空隙 */
+            object-fit: cover;
+        }
+
         h1 { text-align: center; color: var(--primary-color); margin-bottom: 10px; }
         
         fieldset {
@@ -42,7 +56,7 @@
 
         legend { font-weight: bold; color: var(--primary-color); padding: 0 10px; }
 
-        /* 新增：單位提示框樣式 */
+        /* 單位提示框樣式 */
         .notice-box {
             background-color: #f8f9fa;
             border-left: 4px solid var(--primary-color);
@@ -71,19 +85,19 @@
             display: flex; align-items: center;
         }
         
-        /* 修改：品項連結樣式 (移除藍色與底線，改為滑鼠懸停變色) */
+        /* 品項連結樣式 */
         .item-link {
-            color: #333; /* 預設黑色 */
+            color: #333; 
             cursor: pointer;
-            text-decoration: none; /* 移除底線 */
+            text-decoration: none; 
             transition: color 0.2s;
-            user-select: none; /* 防止連點時選取文字 */
+            user-select: none; 
         }
         .item-link:hover {
-            color: var(--primary-color); /* 滑鼠移過去變成品牌橘色 */
+            color: var(--primary-color); 
         }
         .item-link:active {
-            transform: scale(0.98); /* 點擊時微縮效果 */
+            transform: scale(0.98); 
         }
 
         .item input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
@@ -200,6 +214,10 @@
 <body>
 
 <div class="container">
+    
+    <!-- ★★★ 這裡加入了您的 Banner 圖片 ★★★ -->
+    <img src="picture/表單Banner.png" class="banner-img" alt="麻老六滷味Banner">
+
     <h1>麻老六滷味訂單</h1>
     
     <fieldset>
@@ -227,10 +245,8 @@
     </fieldset>
 
     <fieldset>
-        <!-- 修改了 Legend 提示文字 -->
         <legend>2. 選擇餐點 (點擊品名可看圖)</legend>
         
-        <!-- 新增：單位提示區塊 -->
         <div class="notice-box">
             💡 提醒您：所有商品皆以「份」為單位計算
         </div>
